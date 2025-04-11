@@ -1,0 +1,119 @@
+Lab 6: Process Management and Implementing Pipes Using Standard Files
+Amaç
+
+Bu laboratuvar çalışmasında, UNIX sistemlerinde process management (işlem yönetimi) ve pipe (boru) kullanımı konularına odaklanarak, dosya tabanlı pipe simülasyonları ve gerçek pipe kullanımı ile inter-process communication (IPC) uygulamalarının nasıl yapılacağını öğrenmek amaçlanmıştır. Ayrıca, girdi/çıktı yönlendirme ve çok aşamalı pipeline oluşturma becerisi kazandırılmıştır.
+Önkoşullar
+
+    C programlama bilgisi.
+
+    UNIX sistem çağrıları (fork, exec, pipe) hakkında temel bilgi.
+
+    Dosya tanımlayıcıları ve standart girdi/çıktı (stdin/stdout) kullanımı.
+
+Adımlar ve Açıklamalar
+Task 0: Simulating Pipe Semantics Using a File (temp.txt)
+
+İlk görevde, iki süreç arasında pipe simülasyonu yapılmış ve çıktı dosyaya yönlendirilip, başka bir süreç bu dosyayı okuyarak işleme yapmıştır. Gerçek bir pipe kullanılmamış, yerine dosya kullanılmıştır.
+
+Adımlar:
+
+    open() fonksiyonu ile geçici bir dosya (temp.txt) oluşturuldu.
+
+    İlk çocuk süreçte, dup2() kullanılarak stdout, bu dosyaya yönlendirilmiş ve ls -l komutu çalıştırılarak çıktı dosyaya yazıldı.
+
+    Ana süreç, yazma işlemi tamamlanana kadar beklemiştir.
+
+    İkinci çocuk süreçte, dup2() ile stdin, dosyaya yönlendirilmiş ve wc -l komutu ile satır sayısı hesaplanmıştır.
+
+    Son olarak, dosya silinmiştir.
+
+Beklenen Çıktı:
+
+7
+
+Çıktı doğru bir şekilde elde edilmiştir ve bu, ls -l komutunun çıktısında bulunan satır sayısını ifade etmektedir.
+
+Yorumlar:
+
+    Gerçek pipe yerine dosya kullanıldığında, disk I/O ve eşzamanlılık sorunları gözlemlenebilir.
+
+    Eğer okuyucu süreç yazıcıdan önce başlarsa, boş bir çıktı alınabilir. Bu yüzden doğru senkronizasyon gereklidir.
+
+Task 1: Create a Pipe and Redirect Output
+
+Bu görevde, gerçek bir pipe kullanılarak çıktı yönlendirilmiştir. Ana süreç, ls -l komutunun çıktısını pipe'a yönlendirirken, çocuk süreç bu çıktıyı okur ve wc -l komutuyla satır sayısını hesaplar.
+
+Adımlar:
+
+    pipe() ile bir pipe oluşturulmuştur.
+
+    Ana süreçte, dup2() ile stdout, pipe'ın yazma ucuna yönlendirilmiştir.
+
+    ls -l komutu çalıştırılarak çıktı pipe'a yazılmıştır.
+
+    Çocuk süreçte, dup2() ile stdin, pipe'ın okuma ucuna yönlendirilmiş ve wc -l komutu çalıştırılarak satır sayısı hesaplanmıştır.
+
+Beklenen Çıktı:
+
+7
+
+Yorumlar:
+
+    Gerçek bir pipe kullanılarak daha hızlı bir veri iletimi sağlanmıştır.
+
+    dup2() ile stdout ve stdin doğru şekilde yönlendirilmiştir.
+
+    Pipe uçları doğru kapatılmalıdır.
+
+Task 2: Implement a Multi-Stage Pipeline
+
+Bu görevde, birden fazla komut zinciri kullanılarak çok aşamalı bir pipeline oluşturulmuştur. ls | grep .c | wc -l komutu, iki pipe ile birleştirilmiştir.
+
+Adımlar:
+
+    İki pipe oluşturulmuştur.
+
+    İlk çocuk süreçte, stdout birinci pipe'a yönlendirilmiş ve ls komutu çalıştırılmıştır.
+
+    İkinci çocuk süreçte, stdin birinci pipe'tan ve stdout ikinci pipe'a yönlendirilmiş ve grep .c komutu çalıştırılmıştır.
+
+    Ana süreç, stdin ikinci pipe'tan alınarak wc -l komutunu çalıştırmıştır.
+
+Beklenen Çıktı:
+
+3
+
+Bu çıktı, .c uzantılı dosyaların sayısını verir.
+
+Yorumlar:
+
+    Pipe'lar doğru şekilde kurulmuş ve veri sırasına dikkat edilmiştir.
+
+    dup2() işlemleri doğru sırayla yapılmıştır.
+
+    Çocuk süreçlerin birbirini beklemesi sağlanmıştır, bu sayede veri kaybı yaşanmamıştır.
+
+Sonuç
+
+Bu laboratuvar çalışması, C dilinde UNIX sistemlerinin pipe mekanizmalarını kullanarak işlem yönetimi ve girdi/çıktı yönlendirme işlemlerini öğrenmemizi sağladı. Gerçek pipe'lar ile dosya tabanlı pipe'lar arasındaki farklar gözlemlenmiştir. Ayrıca, çok aşamalı pipeline oluşturularak daha karmaşık işlem zincirleri kurma becerisi kazanılmıştır.
+Sorulara Yanıtlar
+
+    Gerçek pipe yerine dosya kullanmanın kısıtlamaları nelerdir?
+
+        Gerçek bir pipe, bellekte veri paylaşımına olanak sağlar ve daha hızlıdır. Ancak dosya kullanıldığında disk I/O işlemleri ve eşzamanlılık sorunları ortaya çıkabilir. Ayrıca, dosya kullanımı işlemci üzerinde ek yük yaratabilir.
+
+    Okuyucu süreç yazıcıdan önce başlarsa ne olur?
+
+        Okuyucu süreç, dosya henüz yazılmadığı için boş bir çıktı alır. Bu yüzden doğru senkronizasyon gereklidir.
+
+    Çıktı yönlendirme işlemleri gerçek dünyada ne zaman kullanılabilir?
+
+        Dosya tabanlı yönlendirme, pipe kullanımı mümkün olmayan veya işlemci kaynaklarının sınırlı olduğu durumlarda, geçici veri saklama veya işlem çıktısını başka bir süreçle paylaşma amacıyla kullanılabilir.
+
+Kapanış ve Temizlik
+
+    Kodlar başarıyla çalıştırıldı.
+
+    Tüm geçici dosyalar silindi.
+
+    Ekran görüntüleri alındı ve rapor dosyası hazırlandı.
